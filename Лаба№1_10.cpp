@@ -4,7 +4,7 @@ using namespace std;
 
 struct Linear {
     double first;   // коэффициент A
-    double second;  // коэффициент B (свободный член)
+    double second;  // коэффициент B 
 
     void init(double a, double b);
     void read();
@@ -23,7 +23,7 @@ void Linear::read() {
     double a, b;
     cout << "Введите коэффициент A: ";
     cin >> a;
-    cout << "Введите коэффициент B (свободный член): ";
+    cout << "Введите коэффициент B : ";
     cin >> b;
     init(a, b);
 }
@@ -100,11 +100,11 @@ int main() {
     cout << "\n=== 6. Различные случаи ===" << endl;
 
     Linear horizontal = make_linear(0.0, 7.5);
-    cout << "Горизонтальная линия: ";
+    cout << "Горизонтальная прямая: ";
     horizontal.display();
     cout << " => y всегда = " << horizontal.function(100) << endl;
 
-    Linear vertical_like; // имитируем "вертикальную" — большой наклон
+    Linear vertical_like; // имитируем вертикальную прямую(почти)
     vertical_like.init(1000.0, 0.0);
     cout << "Практически вертикальная: ";
     vertical_like.display();
