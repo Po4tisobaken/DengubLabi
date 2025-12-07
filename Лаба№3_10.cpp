@@ -13,11 +13,11 @@ private:
 
 public:
     // Конструкторы 
-    Time();                                           // без аргументов
+    Time();                                           
     Time(unsigned int h, unsigned int m, unsigned int s); // числами
     Time(const string& str);                          // строкой "HH:MM:SS"
     Time(unsigned long totalSeconds);                 // секундами
-    Time(const Time& other);                          // копирование
+    Time(const Time& other);                          
 
     // Методы
     void read();
