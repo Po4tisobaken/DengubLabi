@@ -1,38 +1,49 @@
-﻿#include <iostream>
+#include <iostream>
+#include <iomanip>
 #include <cstring>
-#include <cmath>
+#include <string>
+#include <memory> // использовал для корректного вывода для дробных чисел 
+
 using namespace std;
 
-
-//========================================== Абстрактный базовый класс
-
+//==========================================
+// Абстрактный базовый класс
 class Base {
 public:
-    virtual void Input() = 0;
-    virtual void Output() = 0;
-    virtual ~Base() {}          
+    virtual ~Base() = default;
+
+    //============== Перегружаем операторы ввода/вывода
+    virtual istream& input(istream& is) = 0;
+    virtual ostream& output(ostream& os) const = 0;
 };
 
+//========== Перегруженные глобальные операторы для удобства
+istream& operator>>(istream& is, Base& obj) {
+    return obj.input(is);
+}
 
-//======================================================== Класс Hex 
+ostream& operator<<(ostream& os, const Base& obj) {
+    return obj.output(os);
+}
+
+//========================================================
+// Класс Hex (оставляем без изменений, кроме реализации через потоки)
 class Hex : public Base {
 protected:
-    unsigned char digits[100];   // 0..9, A..F (храним как числа 0–15)
-    int length;                  // актуальное количество цифр (1..100)
+    unsigned char digits[100]; // 0..15
+    int length;
 
 public:
-    Hex() {
-        length = 1;
+    Hex() : length(1) {
         memset(digits, 0, sizeof(digits));
     }
 
-    void Input()  {
+    istream& input(istream& is) override {
         cout << "\n--- Ввод Hex (шестнадцатеричное число) ---\n";
-        string s;
         cout << "Введите число в шестнадцатеричной системе (до 100 цифр): ";
-        cin >> s;
+        string s;
+        is >> s;
 
-        // Убираем пробелы и переводим в верхний регистр
         string cleaned;
         for (char c : s) {
             if (c != ' ') cleaned += toupper(c);
@@ -49,7 +60,6 @@ public:
             cleaned = "0";
         }
 
-        // Заполняем массив: младшая цифра — в digits[0]
         memset(digits, 0, sizeof(digits));
         for (int i = 0; i < length; ++i) {
             char c = cleaned[length - 1 - i];
@@ -60,75 +70,65 @@ public:
                 digits[i] = 0;
             }
         }
+        return is;
     }
 
-    void Output()  {
-        cout << "\n--- Вывод Hex ---\n";
+    ostream& output(ostream& os) const override {
+        os << "\n--- Вывод Hex ---\n";
         if (length == 1 && digits[0] == 0) {
-            cout << "0" << endl;
-            return;
+            os << "0" << endl;
+            return os;
         }
-
-        cout << "0x";
+        os << "0x";
         bool started = false;
         for (int i = length - 1; i >= 0; --i) {
             if (digits[i] != 0 || started) {
                 started = true;
                 if (digits[i] < 10)
-                    cout << (int)digits[i];
+                    os << (int)digits[i];
                 else
-                    cout << (char)('A' + digits[i] - 10);
+                    os << (char)('A' + digits[i] - 10);
             }
         }
-        if (!started) cout << "0";
-        cout << endl;
+        if (!started) os << "0";
+        os << endl;
+        return os;
     }
 };
 
-
-//========================================= Класс Fraction — дробное десятичное число
-
-
+//========================================= Класс Fraction с перегрузкой >> и <<
 class Fraction : public Base {
 protected:
-    long long whole;              // целая часть (может быть отрицательной)
-    unsigned char* frac_digits;   // цифры дробной части (0..9)
-    int frac_len;                 // количество цифр после запятой
-    bool sing;                    // знак (true — отрицательное)
+    long long whole;                                      // целая часть
+    std::unique_ptr<unsigned char[]> frac_digits;         // цифры дробной части
+    int frac_len;                                         // количество знаков после запятой
+    bool sign;                                            // true — отрицательное
 
 public:
-    Fraction() {
-        whole = 0;
-        sing = false;
-        frac_len = 4;  // по умолчанию 4 знака
-        frac_digits = new unsigned char[frac_len];
-        memset(frac_digits, 0, frac_len);
+    Fraction() : whole(0), frac_len(4), sign(false) {
+        frac_digits = std::make_unique<unsigned char[]>(frac_len);
+        memset(frac_digits.get(), 0, frac_len);
     }
 
-    ~Fraction() {
-        delete[] frac_digits;
-    }
-
-    void Input()  {
+    // Перегрузка оператора ввода >>
+    istream& input(istream& is) override {
         cout << "\n--- Ввод Fraction (дробное число) ---\n";
         cout << "Количество знаков после запятой (1–20 иначе будет 4): ";
-        cin >> frac_len;
-        if (frac_len < 1 || frac_len > 20) frac_len = 4;
-
-        delete[] frac_digits;
-        frac_digits = new unsigned char[frac_len];
+        int len;
+        if (!(is >> len) || len < 1 || len > 20) {
+            len = 4;
+            cout << "Некорректное значение, будет использовано 4.\n";
+        }
+        frac_len = len;
+        frac_digits = std::make_unique<unsigned char[]>(frac_len);
+        memset(frac_digits.get(), 0, frac_len);
 
         double value;
         cout << "Введите дробное число (например: -123.4567): ";
-        cin >> value;
+        is >> value;
 
-        if (value < 0) {
-            sing = true;
-            value = -value;
-        }
-        else 
-            sing = false;
-        
+        sign = (value < 0);
+        if (sign) value = -value;
 
         whole = (long long)value;
         double fraction = value - whole;
@@ -139,22 +139,23 @@ public:
             frac_digits[i] = digit;
             fraction -= digit;
         }
+        return is;
     }
 
-    void Output()  {
-        cout << "\n--- Вывод Fraction ---\n";
-        if (sing) cout << "-";
-        cout << whole << ".";
+    // Перегрузка оператора вывода <<
+    ostream& output(ostream& os) const override {
+        os << "\n--- Вывод Fraction ---\n";
+        if (sign) os << "-";
+        os << whole << ".";
         for (int i = 0; i < frac_len; ++i) {
-            cout << (int)frac_digits[i];
+            os << (int)frac_digits[i];
         }
-        cout << endl;
+        os << endl;
+        return os;
     }
 };
 
-
 //====================================== main
-
 int main() {
     setlocale(LC_ALL, "Russian");
 
@@ -163,17 +164,17 @@ int main() {
     cout << "=== Лабораторная работа №6. Вариант 10 ===\n";
     cout << "Вариант: Hex + Fraction\n\n";
 
-    // Демонстрация Hex
+    // Демонстрация Hex через потоки
     Hex h;
     ptr = &h;
-    ptr->Input();
-    ptr->Output();
+    cin >> *ptr;   
+    cout << *ptr; 
 
-    // Демонстрация Fraction
+    // Демонстрация Fraction через потоки
     Fraction f;
     ptr = &f;
-    ptr->Input();
-    ptr->Output();
+    cin >> *ptr;
+    cout << *ptr;
 
     cout << "\nПрограмма завершена.\n";
     return 0;
