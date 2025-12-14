@@ -43,12 +43,9 @@ void Time::normalize() {
 }
 
 // Конструкторы
-Time::Time() {
-    hours = minutes = seconds = 0;
-}
+Time::Time() : hours(0), minutes(0), seconds(0) {}
 
-Time::Time(unsigned int h, unsigned int m, unsigned int s) {
-    hours = h; minutes = m; seconds = s;
+Time::Time(unsigned int h, unsigned int m, unsigned int s) : hours(h), minutes(m), seconds(s) {
     normalize();
 }
 
