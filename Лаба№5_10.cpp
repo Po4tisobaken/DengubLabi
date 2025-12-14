@@ -1,22 +1,17 @@
 ﻿#include <iostream>
+#include <iomanip>
 #include <string>
 #include <sstream>
-#include <iomanip>
 using namespace std;
 
 // ==================================== Класс Triad ====================================
-
 class Triad {
 protected:
-    int a, b, c;                    // три числа
+    int a, b, c; 
 
 public:
     Triad();
     Triad(int x, int y, int z);
-    ~Triad() = default;             
-
-    void set(int x, int y, int z);
-    void read();
 
     int getA() const;
     int getB() const;
@@ -27,32 +22,20 @@ public:
     bool operator==(const Triad& t) const;
     bool operator!=(const Triad& t) const;
 
+    friend ostream& operator<<(ostream& os, const Triad& t);
+    friend istream& operator>>(istream& is, Triad& t);
+
     virtual string toString() const;
-    void print() const;
 };
 
-// ================================== Реализации методов Triad
+// Реализации методов Triad
 Triad::Triad() : a(0), b(0), c(0) {}
 
-Triad::Triad(int x, int y, int z) {
-    set(x, y, z);
-}
-
-void Triad::set(int x, int y, int z) {
+Triad::Triad(int x, int y, int z) : a(x), b(y), c(z) {
     if (x < 0 || y < 0 || z < 0) {
         cout << "Ошибка: значения не могут быть отрицательными!\n";
         exit(1);
     }
-    a = x;
-    b = y;
-    c = z;
-}
-
-void Triad::read() {
-    int x, y, z;
-    cout << "Введите три неотрицательных числа (a b c): ";
-    cin >> x >> y >> z;
-    set(x, y, z);
 }
 
 int Triad::getA() const { return a; }
@@ -77,33 +60,45 @@ bool Triad::operator!=(const Triad& t) const {
     return !(*this == t);
 }
 
+ostream& operator<<(ostream& os, const Triad& t) {
+    os << "(" << t.a << ", " << t.b << ", " << t.c << ")";
+    return os;
+}
+
+istream& operator>>(istream& is, Triad& t) {
+    int x, y, z;
+    cout << "Введите три неотрицательных числа (a b c): ";
+    is >> x >> y >> z;
+    if (is.fail() || x < 0 || y < 0 || z < 0) {
+        cout << "Ошибка ввода: значения должны быть неотрицательными целыми числами!\n";
+        exit(1);
+    }
+    t.a = x; t.b = y; t.c = z;
+    return is;
+}
+
 string Triad::toString() const {
     return "(" + to_string(a) + ", " + to_string(b) + ", " + to_string(c) + ")";
 }
 
-void Triad::print() const {
-    cout << toString() << endl;
-}
-
 // ==================================== Класс Date ====================================
-
 class Date : public Triad {
 public:
     Date();
     Date(int year, int month, int day);
-    ~Date() = default;
-
-    void read();
 
     bool operator>(const Date& d) const;
     bool operator<(const Date& d) const;
     bool operator==(const Date& d) const;
     bool operator!=(const Date& d) const;
 
-    string toString() const ;   
+    friend ostream& operator<<(ostream& os, const Date& d);
+    friend istream& operator>>(istream& is, Date& d);
+
+    string toString() const override;
 };
 
-// ==================================================Реализации методов Date
+// Реализации методов Date
 Date::Date() : Triad() {}
 
 Date::Date(int year, int month, int day) : Triad(year, month, day) {
@@ -113,24 +108,10 @@ Date::Date(int year, int month, int day) : Triad(year, month, day) {
     }
 }
 
-void Date::read() {
-    int day, month, year;
-    cout << "Введите дату (день месяц год): ";
-    cin >> day >> month >> year;
-
-    if (year <= 0 || month < 1 || month > 12 || day < 1 || day > 31) {
-        cout << "Ошибка: некорректная дата!\n";
-        exit(1);
-    }
-    a = year;
-    b = month;
-    c = day;
-}
-
 bool Date::operator>(const Date& d) const {
-    if (a != d.a) return a > d.a;      // год
-    if (b != d.b) return b > d.b;      // месяц
-    return c > d.c;                    // день
+    if (a != d.a) return a > d.a; // год
+    if (b != d.b) return b > d.b; // месяц
+    return c > d.c;               // день
 }
 
 bool Date::operator<(const Date& d) const {
@@ -145,6 +126,27 @@ bool Date::operator!=(const Date& d) const {
     return !(*this == d);
 }
 
+ostream& operator<<(ostream& os, const Date& d) {
+    os << setfill('0') << setw(4) << d.a << "-"
+        << setw(2) << d.b << "-"
+        << setw(2) << d.c;
+    return os;
+}
+
+istream& operator>>(istream& is, Date& d) {
+    int day, month, year;
+    cout << "Введите дату (день месяц год): ";
+    is >> day >> month >> year;
+    if (is.fail() || year <= 0 || month < 1 || month > 12 || day < 1 || day > 31) {
+        cout << "Ошибка: некорректная дата или неверный ввод!\n";
+        exit(1);
+    }
+    d.a = year;
+    d.b = month;
+    d.c = day;
+    return is;
+}
+
 string Date::toString() const {
     stringstream ss;
     ss << setfill('0') << setw(4) << a << "-"
@@ -154,65 +156,56 @@ string Date::toString() const {
 }
 
 // ========================================================= main
-
 int main() {
     setlocale(LC_ALL, "Russian");
-
     cout << "Лабораторная работа №5. Наследование\n";
     cout << "Вариант 10: Triad → Date (тройка чисел → дата)\n\n";
 
-    // ======================================== Работа с Triad 
+    // ======================================== Работа с Triad
     cout << "=== Triad ===\n";
     Triad t1, t2;
-
-    cout << "Первая тройка:\n";  t1.read();
-    cout << "Вторая тройка:\n";  t2.read();
-
-    cout << "t1 = "; t1.print();
-    cout << "t2 = "; t2.print();
-
+    cin >> t1;
+    cin >> t2;
+    cout << "t1 = " << t1 << endl;
+    cout << "t2 = " << t2 << endl;
     cout << "t1 > t2 : " << (t1 > t2 ? "true" : "false") << endl;
     cout << "t1 < t2 : " << (t1 < t2 ? "true" : "false") << endl;
     cout << "t1 == t2: " << (t1 == t2 ? "true" : "false") << "\n\n";
 
-    // ============================= Работа с Date 
+    // ============================= Работа с Date
     cout << "=== Date ===\n";
     Date d1, d2;
-
-    cout << "Первая дата:\n";  d1.read();
-    cout << "Вторая дата:\n";  d2.read();
-
-    cout << "d1 = " << d1.toString() << endl;
-    cout << "d2 = " << d2.toString() << endl;
-
+    cin >> d1;
+    cin >> d2;
+    cout << "d1 = " << d1 << endl;
+    cout << "d2 = " << d2 << endl;
     cout << "d1 > d2 : " << (d1 > d2 ? "true" : "false") << endl;
     cout << "d1 < d2 : " << (d1 < d2 ? "true" : "false") << "\n\n";
 
-
     // ==================== Массивы объектов ====================
     cout << "\n=== Массивы объектов ===\n";
-
     Triad triadArr[2];
-    Date  dateArr[2];
+    Date dateArr[2];
 
     cout << "Введите 2 тройки:\n";
     for (int i = 0; i < 2; ++i) {
         cout << i + 1 << ": ";
-        triadArr[i].read();
+        cin >> triadArr[i];
+    }
+    cout << "\nМассив Triad:\n";
+    for (int i = 0; i < 2; ++i) {
+        cout << triadArr[i] << endl;
     }
 
     cout << "\nВведите 2 даты:\n";
     for (int i = 0; i < 2; ++i) {
         cout << i + 1 << ": ";
-        dateArr[i].read();
+        cin >> dateArr[i];
+    }
+    cout << "\nМассив Date:\n";
+    for (int i = 0; i < 2; ++i) {
+        cout << dateArr[i] << endl;
     }
 
-    cout << "\nМассив Triad:\n";
-    for (int i = 0; i < 2; ++i) triadArr[i].print();
-
-    cout << "\nМассив Date:\n";
-    for (int i = 0; i < 2; ++i) dateArr[i].print();
-
-    cout << "\nПрограмма завершена успешно.\n";
     return 0;
 }
