@@ -149,9 +149,9 @@ istream& operator>>(istream& is, Date& d) {
 
 string Date::toString() const {
     stringstream ss;
-    ss << setfill('0') << setw(4) << a << "-"
-        << setw(2) << b << "-"
-        << setw(2) << c;
+    ss << setw(4) << a << "-"
+       << setw(2) << b << "-"
+       << setw(2) << c;
     return ss.str();
 }
 
